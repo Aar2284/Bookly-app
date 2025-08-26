@@ -36,6 +36,24 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+# Book Models for Bookly App
+class Book(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    author: str
+    genre: str
+    mood_tags: str  # comma-separated moods like 'adventurous,uplifting,calm'
+    description: str
+    cover_image_url: str
+
+class BookRecommendationRequest(BaseModel):
+    mood: str
+    genre: str
+
+class BookRecommendationResponse(BaseModel):
+    books: List[Book]
+    total_matches: int
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
