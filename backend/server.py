@@ -59,6 +59,63 @@ class BookRecommendationResponse(BaseModel):
 async def root():
     return {"message": "Hello World"}
 
+# Bookly App - Book Recommendation Endpoint
+@api_router.post("/recommend", response_model=BookRecommendationResponse)
+async def recommend_books(request: BookRecommendationRequest):
+    """
+    Recommend books based on user's mood and genre preferences.
+    Returns top 3-5 books that match the genre and contain at least one matching mood tag.
+    """
+    try:
+        # Build query to match genre exactly and mood tags (case-insensitive partial match)
+        query = {
+            "genre": {"$regex": f"^{re.escape(request.genre)}$", "$options": "i"}
+        }
+        
+        # Find all books matching the genre first
+        genre_matches = await db.books.find(query).to_list(length=None)
+        
+        if not genre_matches:
+            return BookRecommendationResponse(books=[], total_matches=0)
+        
+        # Filter books that have at least one matching mood tag
+        matching_books = []
+        request_mood_lower = request.mood.lower().strip()
+        
+        for book_data in genre_matches:
+            # Parse mood_tags (comma-separated string)
+            book_moods = [mood.strip().lower() for mood in book_data.get('mood_tags', '').split(',')]
+            
+            # Check if the requested mood matches any of the book's mood tags
+            if any(request_mood_lower in mood or mood in request_mood_lower for mood in book_moods if mood):
+                try:
+                    book = Book(**book_data)
+                    matching_books.append(book)
+                except Exception as e:
+                    logger.warning(f"Could not parse book data: {e}")
+                    continue
+        
+        # Sort by relevance (books with exact mood matches first, then partial)
+        def mood_relevance_score(book):
+            book_moods = [mood.strip().lower() for mood in book.mood_tags.split(',')]
+            exact_match = request_mood_lower in book_moods
+            partial_match = any(request_mood_lower in mood for mood in book_moods)
+            return (2 if exact_match else (1 if partial_match else 0))
+        
+        matching_books.sort(key=mood_relevance_score, reverse=True)
+        
+        # Return top 3-5 books
+        top_books = matching_books[:5]
+        
+        return BookRecommendationResponse(
+            books=top_books,
+            total_matches=len(matching_books)
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in recommend_books: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during book recommendation")
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.dict()
