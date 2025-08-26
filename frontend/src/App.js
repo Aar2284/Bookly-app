@@ -9,6 +9,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [totalMatches, setTotalMatches] = useState(0);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [originalSearchGenre, setOriginalSearchGenre] = useState('');
 
   const handleGetRecommendations = async () => {
     if (!mood.trim() || !genre.trim()) {
