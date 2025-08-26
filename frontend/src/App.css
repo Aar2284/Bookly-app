@@ -94,6 +94,65 @@ button:active:not(:disabled) {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* Book card hover animation */
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+/* Modal backdrop animation */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal content animation */
+.modal-content {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Highlighted text styling */
+mark.bg-yellow-200 {
+  background-color: #fef08a;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* History card hover effects */
+.hover\:border-indigo-300:hover {
+  border-color: #a5b4fc;
+}
+
+.hover\:bg-indigo-50:hover {
+  background-color: #eef2ff;
+}
+
+/* Sticky positioning for sidebar */
+.sticky {
+  position: sticky;
+}
+
 /* Responsive design improvements */
 @media (max-width: 768px) {
   .grid {
@@ -106,6 +165,12 @@ button:active:not(:disabled) {
   
   .sm\:p-8 {
     padding: 2rem;
+  }
+
+  /* Modal adjustments for mobile */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
   }
 }
 
@@ -136,4 +201,21 @@ img {
 
 .hover\:shadow-lg:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Z-index utilities */
+.z-50 {
+  z-index: 50;
+}
+
+/* Cursor pointer for clickable elements */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Text truncation for long titles */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
