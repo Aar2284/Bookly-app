@@ -162,11 +162,6 @@ function App() {
 
   return (
     <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
-      {/* Debug Info - Remove after testing */}
-      <div style={{position: 'fixed', top: '100px', right: '10px', background: 'yellow', padding: '10px', fontSize: '12px', zIndex: 1000}}>
-        Debug: Recommendations: {recommendations.length}, Loading: {loading.toString()}, Error: {error}
-      </div>
-      
       {/* Header */}
       <header className="app-header">
         <div className="header-content">
