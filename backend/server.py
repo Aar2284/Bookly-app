@@ -128,6 +128,189 @@ async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
+# Helper endpoints for Bookly App
+@api_router.post("/books/populate")
+async def populate_sample_books():
+    """Populate the database with sample book data."""
+    
+    sample_books = [
+        {
+            "title": "The Hobbit",
+            "author": "J.R.R. Tolkien",
+            "genre": "Fantasy",
+            "mood_tags": "adventurous,whimsical,uplifting",
+            "description": "A reluctant hobbit embarks on an unexpected journey filled with adventure, treasure, and self-discovery.",
+            "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
+        },
+        {
+            "title": "Murder on the Orient Express",
+            "author": "Agatha Christie", 
+            "genre": "Mystery",
+            "mood_tags": "mysterious,suspenseful,intriguing",
+            "description": "Detective Hercule Poirot investigates a murder aboard the famous Orient Express train.",
+            "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
+        },
+        {
+            "title": "The Alchemist",
+            "author": "Paulo Coelho",
+            "genre": "Philosophy",
+            "mood_tags": "inspirational,uplifting,contemplative",
+            "description": "A young shepherd's journey to find treasure leads to profound self-discovery.",
+            "cover_image_url": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
+        },
+        {
+            "title": "Gone Girl",
+            "author": "Gillian Flynn",
+            "genre": "Thriller",
+            "mood_tags": "dark,suspenseful,psychological",
+            "description": "A psychological thriller about a marriage gone terribly wrong.",
+            "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
+        },
+        {
+            "title": "Pride and Prejudice",
+            "author": "Jane Austen",
+            "genre": "Romance",
+            "mood_tags": "romantic,witty,charming",
+            "description": "A classic tale of love, misunderstandings, and social commentary in Regency England.",
+            "cover_image_url": "https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400"
+        },
+        {
+            "title": "Dune",
+            "author": "Frank Herbert",
+            "genre": "Science Fiction",
+            "mood_tags": "epic,adventurous,complex",
+            "description": "A epic space opera set on the desert planet Arrakis, following Paul Atreides' rise to power.",
+            "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
+        },
+        {
+            "title": "The Midnight Library",
+            "author": "Matt Haig",
+            "genre": "Fiction",
+            "mood_tags": "contemplative,uplifting,philosophical",
+            "description": "A woman finds herself in a magical library between life and death, exploring alternate lives.",
+            "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
+        },
+        {
+            "title": "The Girl with the Dragon Tattoo",
+            "author": "Stieg Larsson",
+            "genre": "Thriller",
+            "mood_tags": "dark,mysterious,intense",
+            "description": "A journalist and a hacker investigate a decades-old disappearance in Sweden.",
+            "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
+        },
+        {
+            "title": "The Lord of the Rings",
+            "author": "J.R.R. Tolkien",
+            "genre": "Fantasy",
+            "mood_tags": "epic,adventurous,heroic",
+            "description": "An epic fantasy adventure following the quest to destroy the One Ring.",
+            "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
+        },
+        {
+            "title": "To Kill a Mockingbird",
+            "author": "Harper Lee",
+            "genre": "Classic",
+            "mood_tags": "thoughtful,emotional,educational",
+            "description": "A powerful story of racial injustice and childhood innocence in the American South.",
+            "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
+        },
+        {
+            "title": "The Catcher in the Rye",
+            "author": "J.D. Salinger",
+            "genre": "Classic",
+            "mood_tags": "introspective,melancholy,rebellious",
+            "description": "A teenager's alienated journey through New York City over a few days.",
+            "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
+        },
+        {
+            "title": "The Great Gatsby",
+            "author": "F. Scott Fitzgerald",
+            "genre": "Classic",
+            "mood_tags": "glamorous,tragic,nostalgic",
+            "description": "A critique of the American Dream set in the Jazz Age.",
+            "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
+        },
+        {
+            "title": "Harry Potter and the Sorcerer's Stone",
+            "author": "J.K. Rowling",
+            "genre": "Fantasy",
+            "mood_tags": "magical,adventurous,uplifting",
+            "description": "A young wizard discovers his magical heritage and begins his education at Hogwarts.",
+            "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
+        },
+        {
+            "title": "1984",
+            "author": "George Orwell",
+            "genre": "Dystopian",
+            "mood_tags": "dark,thought-provoking,dystopian",
+            "description": "A chilling portrayal of totalitarian society and government surveillance.",
+            "cover_image_url": "https://images.unsplash.com/photo-1535905557558-afc4877cdf3f?w=400"
+        },
+        {
+            "title": "The Hitchhiker's Guide to the Galaxy",
+            "author": "Douglas Adams",
+            "genre": "Science Fiction",
+            "mood_tags": "humorous,absurd,whimsical",
+            "description": "A comedic space adventure following Arthur Dent's journey through the galaxy.",
+            "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
+        },
+        {
+            "title": "The Silent Patient",
+            "author": "Alex Michaelides",
+            "genre": "Thriller", 
+            "mood_tags": "psychological,mysterious,intense",
+            "description": "A psychotherapist becomes obsessed with treating a woman who refuses to speak.",
+            "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
+        },
+        {
+            "title": "Where the Crawdads Sing",
+            "author": "Delia Owens",
+            "genre": "Fiction",
+            "mood_tags": "atmospheric,emotional,contemplative",
+            "description": "A mystery and coming-of-age story set in the marshlands of North Carolina.",
+            "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
+        },
+        {
+            "title": "The Seven Husbands of Evelyn Hugo",
+            "author": "Taylor Jenkins Reid",
+            "genre": "Romance",
+            "mood_tags": "glamorous,emotional,captivating",
+            "description": "A reclusive Hollywood icon finally tells her life story to a young journalist.",
+            "cover_image_url": "https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400"
+        }
+    ]
+    
+    try:
+        # Clear existing books collection
+        await db.books.delete_many({})
+        
+        # Insert sample books with generated IDs
+        books_to_insert = []
+        for book_data in sample_books:
+            book = Book(**book_data)
+            books_to_insert.append(book.dict())
+        
+        result = await db.books.insert_many(books_to_insert)
+        
+        return {
+            "message": f"Successfully populated {len(result.inserted_ids)} sample books",
+            "inserted_count": len(result.inserted_ids)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error populating books: {e}")
+        raise HTTPException(status_code=500, detail="Failed to populate sample books")
+
+@api_router.get("/books", response_model=List[Book])
+async def get_all_books():
+    """Get all books in the database."""
+    try:
+        books_data = await db.books.find().to_list(length=None)
+        return [Book(**book) for book in books_data]
+    except Exception as e:
+        logger.error(f"Error fetching books: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch books")
+
 # Include the router in the main app
 app.include_router(api_router)
 
