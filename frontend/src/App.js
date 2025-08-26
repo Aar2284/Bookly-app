@@ -32,10 +32,27 @@ function App() {
         }
       );
 
-      setRecommendations(response.data.books);
-      setTotalMatches(response.data.total_matches);
+      const books = response.data.books;
+      const matches = response.data.total_matches;
+
+      setRecommendations(books);
+      setTotalMatches(matches);
+      setOriginalSearchGenre(genre.trim());
       
-      if (response.data.books.length === 0) {
+      // Add to search history
+      const newHistoryEntry = {
+        id: Date.now(), // Simple ID based on timestamp
+        mood: mood.trim(),
+        genre: genre.trim(),
+        timestamp: new Date(),
+        books: books,
+        totalMatches: matches
+      };
+      
+      // Add to beginning of history array (most recent first)
+      setSearchHistory(prev => [newHistoryEntry, ...prev]);
+      
+      if (books.length === 0) {
         setError('No books found matching your mood and genre. Try different keywords!');
       }
     } catch (err) {
@@ -44,6 +61,46 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookClick = (book) => {
+    setSelectedBook(book);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedBook(null);
+  };
+
+  const handleHistoryClick = (historyEntry) => {
+    setRecommendations(historyEntry.books);
+    setTotalMatches(historyEntry.totalMatches);
+    setOriginalSearchGenre(historyEntry.genre);
+    setMood(historyEntry.mood);
+    setGenre(historyEntry.genre);
+    setError('');
+  };
+
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  const highlightSearchedGenre = (bookGenre, searchedGenre) => {
+    if (!searchedGenre || !bookGenre) return bookGenre;
+    
+    const regex = new RegExp(`(${searchedGenre})`, 'gi');
+    return bookGenre.replace(regex, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>');
   };
 
   const handleKeyPress = (e) => {
