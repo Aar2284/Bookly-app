@@ -47,16 +47,30 @@ function App() {
     setError('');
     
     try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      const apiUrl = `${backendUrl}/api/recommend`;
+      
+      console.log('Making API request to:', apiUrl);
+      console.log('Request payload:', { mood: mood.trim(), genre: genre.trim() });
+      
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/recommend`,
+        apiUrl,
         {
           mood: mood.trim(),
           genre: genre.trim()
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000
         }
       );
 
-      const books = response.data.books;
-      const matches = response.data.total_matches;
+      console.log('API Response:', response.data);
+
+      const books = response.data.books || [];
+      const matches = response.data.total_matches || 0;
 
       setRecommendations(books);
       setTotalMatches(matches);
@@ -79,7 +93,19 @@ function App() {
       }
     } catch (err) {
       console.error('Error fetching recommendations:', err);
-      setError('Failed to get recommendations. Please try again.');
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      if (err.response) {
+        setError(`API Error: ${err.response.status} - ${err.response.data?.detail || 'Unknown error'}`);
+      } else if (err.request) {
+        setError('Network error: Unable to reach the server. Please check your connection.');
+      } else {
+        setError('Request setup error: Please try again.');
+      }
     } finally {
       setLoading(false);
     }
