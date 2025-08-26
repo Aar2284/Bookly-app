@@ -47,8 +47,8 @@ function App() {
     setError('');
     
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL;
-      const apiUrl = `${backendUrl}/api/recommend`;
+      // Hardcode URL temporarily to test
+      const apiUrl = 'https://bookly-api.preview.emergentagent.com/api/recommend';
       
       console.log('Making API request to:', apiUrl);
       console.log('Request payload:', { mood: mood.trim(), genre: genre.trim() });
@@ -71,6 +71,9 @@ function App() {
 
       const books = response.data.books || [];
       const matches = response.data.total_matches || 0;
+
+      console.log('Books received:', books.length);
+      console.log('Setting recommendations:', books);
 
       setRecommendations(books);
       setTotalMatches(matches);
