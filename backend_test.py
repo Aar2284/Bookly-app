@@ -109,20 +109,20 @@ class BooklyAPITester:
         """Test 2: Core recommendation functionality"""
         print("\n=== Testing Core Functionality ===")
         
-        # Test valid mood/genre combinations
+        # Test valid genre/theme combinations
         test_cases = [
-            {"mood": "adventurous", "genre": "Fantasy", "expected_min": 1},
-            {"mood": "mysterious", "genre": "Mystery", "expected_min": 1},
-            {"mood": "romantic", "genre": "Romance", "expected_min": 1},
-            {"mood": "dark", "genre": "Thriller", "expected_min": 1},
-            {"mood": "uplifting", "genre": "Fiction", "expected_min": 1}
+            {"genre": "Fantasy", "theme": "adventure", "expected_min": 1},
+            {"genre": "Mystery", "theme": "mystery", "expected_min": 1},
+            {"genre": "Romance", "theme": "romance", "expected_min": 1},
+            {"genre": "Thriller", "theme": "psychological", "expected_min": 1},
+            {"genre": "Fiction", "theme": "contemplation", "expected_min": 1}
         ]
         
         for case in test_cases:
-            request_data = {"mood": case["mood"], "genre": case["genre"]}
-            result = self.make_request("POST", "/recommend", request_data)
+            request_data = {"genre": case["genre"], "theme": case["theme"]}
+            result = self.make_request("POST", "/search", request_data)
             
-            test_name = f"Core Functionality - {case['genre']}/{case['mood']}"
+            test_name = f"Core Functionality - {case['genre']}/{case['theme']}"
             
             if not result["success"]:
                 self.log_test(test_name, False, f"Request failed: {result['error']}")
@@ -156,17 +156,16 @@ class BooklyAPITester:
                 else:
                     self.log_test(f"{test_name} - Genre Match", False, "Some books don't match requested genre")
                     
-                # Verify mood matching
-                mood_matches = []
+                # Verify theme matching
+                theme_matches = []
                 for book in books:
-                    book_moods = [mood.strip().lower() for mood in book["mood_tags"].split(",")]
-                    mood_match = any(case["mood"].lower() in mood or mood in case["mood"].lower() for mood in book_moods)
-                    mood_matches.append(mood_match)
+                    theme_match = book["theme"].lower() == case["theme"].lower()
+                    theme_matches.append(theme_match)
                     
-                if all(mood_matches):
-                    self.log_test(f"{test_name} - Mood Match", True, "All books contain requested mood")
+                if all(theme_matches):
+                    self.log_test(f"{test_name} - Theme Match", True, "All books match requested theme")
                 else:
-                    self.log_test(f"{test_name} - Mood Match", False, "Some books don't contain requested mood")
+                    self.log_test(f"{test_name} - Theme Match", False, "Some books don't match requested theme")
     
     def test_edge_cases_validation(self):
         """Test 3: Edge cases and validation"""
@@ -174,20 +173,20 @@ class BooklyAPITester:
         
         # Test invalid/empty values
         edge_cases = [
-            {"mood": "", "genre": "Fantasy", "name": "Empty Mood"},
-            {"mood": "happy", "genre": "", "name": "Empty Genre"},
-            {"mood": "", "genre": "", "name": "Both Empty"},
-            {"mood": "nonexistent", "genre": "Fantasy", "name": "Invalid Mood"},
-            {"mood": "happy", "genre": "NonExistentGenre", "name": "Invalid Genre"},
-            {"mood": "ADVENTUROUS", "genre": "FANTASY", "name": "Uppercase Input"},
-            {"mood": "adventurous", "genre": "fantasy", "name": "Lowercase Genre"},
-            {"mood": "adven@#$", "genre": "Fantasy", "name": "Special Characters in Mood"},
-            {"mood": "happy", "genre": "Fan@#$tasy", "name": "Special Characters in Genre"}
+            {"genre": "", "theme": "adventure", "name": "Empty Genre"},
+            {"genre": "Fantasy", "theme": "", "name": "Empty Theme"},
+            {"genre": "", "theme": "", "name": "Both Empty"},
+            {"genre": "NonExistentGenre", "theme": "adventure", "name": "Invalid Genre"},
+            {"genre": "Fantasy", "theme": "nonexistent", "name": "Invalid Theme"},
+            {"genre": "FANTASY", "theme": "ADVENTURE", "name": "Uppercase Input"},
+            {"genre": "fantasy", "theme": "adventure", "name": "Lowercase Genre"},
+            {"genre": "Fan@#$tasy", "theme": "adventure", "name": "Special Characters in Genre"},
+            {"genre": "Fantasy", "theme": "adven@#$", "name": "Special Characters in Theme"}
         ]
         
         for case in edge_cases:
-            request_data = {"mood": case["mood"], "genre": case["genre"]}
-            result = self.make_request("POST", "/recommend", request_data)
+            request_data = {"genre": case["genre"], "theme": case["theme"]}
+            result = self.make_request("POST", "/search", request_data)
             
             test_name = f"Edge Case - {case['name']}"
             
@@ -207,7 +206,7 @@ class BooklyAPITester:
         
         # Test malformed JSON
         try:
-            url = f"{self.base_url}/recommend"
+            url = f"{self.base_url}/search"
             response = requests.post(url, data="invalid json", headers={"Content-Type": "application/json"})
             if response.status_code in [400, 422]:  # Expected validation error
                 self.log_test("Edge Case - Malformed JSON", True, f"Properly rejected with status {response.status_code}")
@@ -218,7 +217,7 @@ class BooklyAPITester:
             
         # Test missing request body
         try:
-            url = f"{self.base_url}/recommend"
+            url = f"{self.base_url}/search"
             response = requests.post(url)
             if response.status_code in [400, 422]:  # Expected validation error
                 self.log_test("Edge Case - Missing Body", True, f"Properly rejected with status {response.status_code}")
@@ -233,7 +232,7 @@ class BooklyAPITester:
         
         # Test response time
         start_time = time.time()
-        result = self.make_request("POST", "/recommend", {"mood": "adventurous", "genre": "Fantasy"})
+        result = self.make_request("POST", "/search", {"genre": "Fantasy", "theme": "adventure"})
         end_time = time.time()
         
         response_time = end_time - start_time
@@ -243,17 +242,14 @@ class BooklyAPITester:
         else:
             self.log_test("Performance - Response Time", False, f"Response time: {response_time:.2f}s (too slow or failed)")
             
-        # Test maximum books returned (should be 5 or less)
+        # Test maximum books returned 
         if result["success"] and result["status_code"] == 200:
             books = result["data"]["books"]
-            if len(books) <= 5:
-                self.log_test("Performance - Max Books Limit", True, f"Returned {len(books)} books (≤5)")
-            else:
-                self.log_test("Performance - Max Books Limit", False, f"Returned {len(books)} books (>5)")
+            self.log_test("Performance - Books Returned", True, f"Returned {len(books)} books")
         
         # Test genre with many vs few matches
-        fantasy_result = self.make_request("POST", "/recommend", {"mood": "adventurous", "genre": "Fantasy"})
-        philosophy_result = self.make_request("POST", "/recommend", {"mood": "contemplative", "genre": "Philosophy"})
+        fantasy_result = self.make_request("POST", "/search", {"genre": "Fantasy", "theme": "adventure"})
+        philosophy_result = self.make_request("POST", "/search", {"genre": "Philosophy", "theme": "inspiration"})
         
         if fantasy_result["success"] and philosophy_result["success"]:
             fantasy_count = len(fantasy_result["data"]["books"])
@@ -291,36 +287,31 @@ class BooklyAPITester:
             self.log_test("Helper Endpoints - POST /books/populate", False, "Request failed or bad status code")
     
     def test_relevance_scoring(self):
-        """Test 6: Relevance scoring (exact matches should rank higher)"""
-        print("\n=== Testing Relevance Scoring ===")
+        """Test 6: Search results matching (exact matches for genre and theme)"""
+        print("\n=== Testing Search Results Matching ===")
         
-        # Test with a mood that should have both exact and partial matches
-        result = self.make_request("POST", "/recommend", {"mood": "dark", "genre": "Thriller"})
+        # Test with genre and theme that should have exact matches
+        result = self.make_request("POST", "/search", {"genre": "Thriller", "theme": "psychological"})
         
         if result["success"] and result["status_code"] == 200:
             books = result["data"]["books"]
-            if len(books) >= 2:
-                # Check if books with exact mood matches come first
-                first_book_moods = [mood.strip().lower() for mood in books[0]["mood_tags"].split(",")]
-                has_exact_match = "dark" in first_book_moods
+            if len(books) >= 1:
+                # Check if books match both genre and theme exactly
+                first_book = books[0]
+                genre_match = first_book["genre"].lower() == "thriller"
+                theme_match = first_book["theme"].lower() == "psychological"
                 
-                if has_exact_match:
-                    self.log_test("Relevance Scoring - Exact Match Priority", True, 
-                                 "Books with exact mood matches ranked higher")
+                if genre_match and theme_match:
+                    self.log_test("Search Results - Exact Match", True, 
+                                 "Books match both requested genre and theme")
                 else:
-                    # Check if it's at least a partial match
-                    has_partial_match = any("dark" in mood for mood in first_book_moods)
-                    if has_partial_match:
-                        self.log_test("Relevance Scoring - Exact Match Priority", True, 
-                                     "Partial match found (acceptable)")
-                    else:
-                        self.log_test("Relevance Scoring - Exact Match Priority", False, 
-                                     "No mood match found in top result")
+                    self.log_test("Search Results - Exact Match", False, 
+                                 f"Genre match: {genre_match}, Theme match: {theme_match}")
             else:
-                self.log_test("Relevance Scoring - Exact Match Priority", False, 
-                             f"Not enough books to test relevance (got {len(books)})")
+                self.log_test("Search Results - Exact Match", False, 
+                             f"No books returned for search (expected at least 1)")
         else:
-            self.log_test("Relevance Scoring - Exact Match Priority", False, "Failed to get recommendation")
+            self.log_test("Search Results - Exact Match", False, "Failed to get search results")
     
     def run_all_tests(self):
         """Run all test suites"""

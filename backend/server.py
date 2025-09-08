@@ -42,15 +42,15 @@ class Book(BaseModel):
     title: str
     author: str
     genre: str
-    mood_tags: str  # comma-separated moods like 'adventurous,uplifting,calm'
+    theme: str  # book theme like 'adventure', 'mystery', 'romance'
     description: str
     cover_image_url: str
 
-class BookRecommendationRequest(BaseModel):
-    mood: str
+class BookSearchRequest(BaseModel):
     genre: str
+    theme: str
 
-class BookRecommendationResponse(BaseModel):
+class BookSearchResponse(BaseModel):
     books: List[Book]
     total_matches: int
 
@@ -59,62 +59,41 @@ class BookRecommendationResponse(BaseModel):
 async def root():
     return {"message": "Hello World"}
 
-# Bookly App - Book Recommendation Endpoint
-@api_router.post("/recommend", response_model=BookRecommendationResponse)
-async def recommend_books(request: BookRecommendationRequest):
+# Bookly App - Book Search Endpoint
+@api_router.post("/search", response_model=BookSearchResponse)
+async def search_books(request: BookSearchRequest):
     """
-    Recommend books based on user's mood and genre preferences.
-    Returns top 3-5 books that match the genre and contain at least one matching mood tag.
+    Search books based on user's genre and theme preferences.
+    Returns books that match the genre and theme (case-insensitive).
     """
     try:
-        # Build query to match genre exactly and mood tags (case-insensitive partial match)
+        # Build query to match genre and theme (case-insensitive)
         query = {
-            "genre": {"$regex": f"^{re.escape(request.genre)}$", "$options": "i"}
+            "genre": {"$regex": f"^{re.escape(request.genre)}$", "$options": "i"},
+            "theme": {"$regex": f"^{re.escape(request.theme)}$", "$options": "i"}
         }
         
-        # Find all books matching the genre first
-        genre_matches = await db.books.find(query).to_list(length=None)
+        # Find all books matching both genre and theme
+        matching_books_data = await db.books.find(query).to_list(length=None)
         
-        if not genre_matches:
-            return BookRecommendationResponse(books=[], total_matches=0)
-        
-        # Filter books that have at least one matching mood tag
+        # Convert to Book objects
         matching_books = []
-        request_mood_lower = request.mood.lower().strip()
+        for book_data in matching_books_data:
+            try:
+                book = Book(**book_data)
+                matching_books.append(book)
+            except Exception as e:
+                logger.warning(f"Could not parse book data: {e}")
+                continue
         
-        for book_data in genre_matches:
-            # Parse mood_tags (comma-separated string)
-            book_moods = [mood.strip().lower() for mood in book_data.get('mood_tags', '').split(',')]
-            
-            # Check if the requested mood matches any of the book's mood tags
-            if any(request_mood_lower in mood or mood in request_mood_lower for mood in book_moods if mood):
-                try:
-                    book = Book(**book_data)
-                    matching_books.append(book)
-                except Exception as e:
-                    logger.warning(f"Could not parse book data: {e}")
-                    continue
-        
-        # Sort by relevance (books with exact mood matches first, then partial)
-        def mood_relevance_score(book):
-            book_moods = [mood.strip().lower() for mood in book.mood_tags.split(',')]
-            exact_match = request_mood_lower in book_moods
-            partial_match = any(request_mood_lower in mood for mood in book_moods)
-            return (2 if exact_match else (1 if partial_match else 0))
-        
-        matching_books.sort(key=mood_relevance_score, reverse=True)
-        
-        # Return top 3-5 books
-        top_books = matching_books[:5]
-        
-        return BookRecommendationResponse(
-            books=top_books,
+        return BookSearchResponse(
+            books=matching_books,
             total_matches=len(matching_books)
         )
         
     except Exception as e:
-        logger.error(f"Error in recommend_books: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error during book recommendation")
+        logger.error(f"Error in search_books: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during book search")
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -138,7 +117,7 @@ async def populate_sample_books():
             "title": "The Hobbit",
             "author": "J.R.R. Tolkien",
             "genre": "Fantasy",
-            "mood_tags": "adventurous,whimsical,uplifting",
+            "theme": "adventure",
             "description": "A reluctant hobbit embarks on an unexpected journey filled with adventure, treasure, and self-discovery.",
             "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
         },
@@ -146,7 +125,7 @@ async def populate_sample_books():
             "title": "Murder on the Orient Express",
             "author": "Agatha Christie", 
             "genre": "Mystery",
-            "mood_tags": "mysterious,suspenseful,intriguing",
+            "theme": "mystery",
             "description": "Detective Hercule Poirot investigates a murder aboard the famous Orient Express train.",
             "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
         },
@@ -154,7 +133,7 @@ async def populate_sample_books():
             "title": "The Alchemist",
             "author": "Paulo Coelho",
             "genre": "Philosophy",
-            "mood_tags": "inspirational,uplifting,contemplative",
+            "theme": "inspiration",
             "description": "A young shepherd's journey to find treasure leads to profound self-discovery.",
             "cover_image_url": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
         },
@@ -162,7 +141,7 @@ async def populate_sample_books():
             "title": "Gone Girl",
             "author": "Gillian Flynn",
             "genre": "Thriller",
-            "mood_tags": "dark,suspenseful,psychological",
+            "theme": "psychological",
             "description": "A psychological thriller about a marriage gone terribly wrong.",
             "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
         },
@@ -170,7 +149,7 @@ async def populate_sample_books():
             "title": "Pride and Prejudice",
             "author": "Jane Austen",
             "genre": "Romance",
-            "mood_tags": "romantic,witty,charming",
+            "theme": "romance",
             "description": "A classic tale of love, misunderstandings, and social commentary in Regency England.",
             "cover_image_url": "https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400"
         },
@@ -178,7 +157,7 @@ async def populate_sample_books():
             "title": "Dune",
             "author": "Frank Herbert",
             "genre": "Science Fiction",
-            "mood_tags": "epic,adventurous,complex",
+            "theme": "epic",
             "description": "A epic space opera set on the desert planet Arrakis, following Paul Atreides' rise to power.",
             "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
         },
@@ -186,7 +165,7 @@ async def populate_sample_books():
             "title": "The Midnight Library",
             "author": "Matt Haig",
             "genre": "Fiction",
-            "mood_tags": "contemplative,uplifting,philosophical",
+            "theme": "contemplation",
             "description": "A woman finds herself in a magical library between life and death, exploring alternate lives.",
             "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
         },
@@ -194,7 +173,7 @@ async def populate_sample_books():
             "title": "The Girl with the Dragon Tattoo",
             "author": "Stieg Larsson",
             "genre": "Thriller",
-            "mood_tags": "dark,mysterious,intense",
+            "theme": "mystery",
             "description": "A journalist and a hacker investigate a decades-old disappearance in Sweden.",
             "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
         },
@@ -202,7 +181,7 @@ async def populate_sample_books():
             "title": "The Lord of the Rings",
             "author": "J.R.R. Tolkien",
             "genre": "Fantasy",
-            "mood_tags": "epic,adventurous,heroic",
+            "theme": "epic",
             "description": "An epic fantasy adventure following the quest to destroy the One Ring.",
             "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
         },
@@ -210,7 +189,7 @@ async def populate_sample_books():
             "title": "To Kill a Mockingbird",
             "author": "Harper Lee",
             "genre": "Classic",
-            "mood_tags": "thoughtful,emotional,educational",
+            "theme": "social justice",
             "description": "A powerful story of racial injustice and childhood innocence in the American South.",
             "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
         },
@@ -218,7 +197,7 @@ async def populate_sample_books():
             "title": "The Catcher in the Rye",
             "author": "J.D. Salinger",
             "genre": "Classic",
-            "mood_tags": "introspective,melancholy,rebellious",
+            "theme": "coming of age",
             "description": "A teenager's alienated journey through New York City over a few days.",
             "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
         },
@@ -226,7 +205,7 @@ async def populate_sample_books():
             "title": "The Great Gatsby",
             "author": "F. Scott Fitzgerald",
             "genre": "Classic",
-            "mood_tags": "glamorous,tragic,nostalgic",
+            "theme": "tragedy",
             "description": "A critique of the American Dream set in the Jazz Age.",
             "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
         },
@@ -234,7 +213,7 @@ async def populate_sample_books():
             "title": "Harry Potter and the Sorcerer's Stone",
             "author": "J.K. Rowling",
             "genre": "Fantasy",
-            "mood_tags": "magical,adventurous,uplifting",
+            "theme": "magic",
             "description": "A young wizard discovers his magical heritage and begins his education at Hogwarts.",
             "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
         },
@@ -242,7 +221,7 @@ async def populate_sample_books():
             "title": "1984",
             "author": "George Orwell",
             "genre": "Dystopian",
-            "mood_tags": "dark,thought-provoking,dystopian",
+            "theme": "dystopia",
             "description": "A chilling portrayal of totalitarian society and government surveillance.",
             "cover_image_url": "https://images.unsplash.com/photo-1535905557558-afc4877cdf3f?w=400"
         },
@@ -250,7 +229,7 @@ async def populate_sample_books():
             "title": "The Hitchhiker's Guide to the Galaxy",
             "author": "Douglas Adams",
             "genre": "Science Fiction",
-            "mood_tags": "humorous,absurd,whimsical",
+            "theme": "humor",
             "description": "A comedic space adventure following Arthur Dent's journey through the galaxy.",
             "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
         },
@@ -258,7 +237,7 @@ async def populate_sample_books():
             "title": "The Silent Patient",
             "author": "Alex Michaelides",
             "genre": "Thriller", 
-            "mood_tags": "psychological,mysterious,intense",
+            "theme": "psychological",
             "description": "A psychotherapist becomes obsessed with treating a woman who refuses to speak.",
             "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
         },
@@ -266,7 +245,7 @@ async def populate_sample_books():
             "title": "Where the Crawdads Sing",
             "author": "Delia Owens",
             "genre": "Fiction",
-            "mood_tags": "atmospheric,emotional,contemplative",
+            "theme": "nature",
             "description": "A mystery and coming-of-age story set in the marshlands of North Carolina.",
             "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
         },
@@ -274,7 +253,7 @@ async def populate_sample_books():
             "title": "The Seven Husbands of Evelyn Hugo",
             "author": "Taylor Jenkins Reid",
             "genre": "Romance",
-            "mood_tags": "glamorous,emotional,captivating",
+            "theme": "glamour",
             "description": "A reclusive Hollywood icon finally tells her life story to a young journalist.",
             "cover_image_url": "https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400"
         }
@@ -310,6 +289,61 @@ async def get_all_books():
     except Exception as e:
         logger.error(f"Error fetching books: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch books")
+
+@api_router.post("/books", response_model=Book)
+async def create_book(book: Book):
+    """Create a new book."""
+    try:
+        book_dict = book.dict()
+        await db.books.insert_one(book_dict)
+        return book
+    except Exception as e:
+        logger.error(f"Error creating book: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create book")
+
+@api_router.put("/books/{book_id}", response_model=Book)
+async def update_book(book_id: str, book_data: dict):
+    """Update an existing book."""
+    try:
+        # Remove the id from update data if present
+        if "id" in book_data:
+            del book_data["id"]
+        
+        result = await db.books.update_one(
+            {"id": book_id},
+            {"$set": book_data}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Book not found")
+        
+        # Fetch and return updated book
+        updated_book_data = await db.books.find_one({"id": book_id})
+        if not updated_book_data:
+            raise HTTPException(status_code=404, detail="Book not found after update")
+        
+        return Book(**updated_book_data)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating book: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update book")
+
+@api_router.delete("/books/{book_id}")
+async def delete_book(book_id: str):
+    """Delete a book."""
+    try:
+        result = await db.books.delete_one({"id": book_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Book not found")
+        
+        return {"message": "Book deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting book: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete book")
 
 # Include the router in the main app
 app.include_router(api_router)
