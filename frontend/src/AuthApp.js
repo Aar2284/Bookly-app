@@ -37,7 +37,7 @@ const AuthApp = () => {
     author: '',
     genre: '',
     description: '',
-    mood_tags: '',
+    themes: '',
     image_url: ''
   });
   
@@ -145,7 +145,7 @@ const AuthApp = () => {
       await axios.post(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/books`, bookForm);
       fetchBooks();
       setShowAddForm(false);
-      setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+      setBookForm({ title: '', author: '', genre: '', description: '', themes: '', image_url: '' });
     } catch (error) {
       console.error('Error adding book:', error);
     }
@@ -157,7 +157,7 @@ const AuthApp = () => {
       await axios.put(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/books/${editingBook.id}`, bookForm);
       fetchBooks();
       setEditingBook(null);
-      setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+      setBookForm({ title: '', author: '', genre: '', description: '', themes: '', image_url: '' });
     } catch (error) {
       console.error('Error updating book:', error);
     }
@@ -181,7 +181,7 @@ const AuthApp = () => {
       author: book.author,
       genre: book.genre,
       description: book.description,
-      mood_tags: book.mood_tags,
+      themes: book.themes,
       image_url: book.image_url || ''
     });
     setShowAddForm(false);
@@ -232,7 +232,7 @@ const AuthApp = () => {
                 onClick={() => {
                   setShowAddForm(true);
                   setEditingBook(null);
-                  setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+                  setBookForm({ title: '', author: '', genre: '', description: '', themes: '', image_url: '' });
                 }}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all transform hover:scale-105"
               >
@@ -285,9 +285,9 @@ const AuthApp = () => {
                     required
                   />
                   <input
-                    placeholder="Mood Tags (comma separated)"
-                    value={bookForm.mood_tags}
-                    onChange={(e) => setBookForm({...bookForm, mood_tags: e.target.value})}
+                    placeholder="Themes (comma separated - e.g., 'dragons,treasure hunting,epic quest')"
+                    value={bookForm.themes}
+                    onChange={(e) => setBookForm({...bookForm, themes: e.target.value})}
                     className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -303,7 +303,7 @@ const AuthApp = () => {
                       onClick={() => {
                         setShowAddForm(false);
                         setEditingBook(null);
-                        setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+                        setBookForm({ title: '', author: '', genre: '', description: '', themes: '', image_url: '' });
                       }}
                       className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
                     >
@@ -333,11 +333,11 @@ const AuthApp = () => {
                           <p className="text-sm text-slate-400 mb-3">📚 Genre: {book.genre}</p>
                           <p className="text-slate-300 mb-4 text-sm leading-relaxed">{book.description}</p>
                           <div>
-                            <p className="text-xs text-slate-400 mb-2">🏷️ Mood Tags:</p>
+                            <p className="text-xs text-slate-400 mb-2">🏷️ Themes:</p>
                             <div className="flex flex-wrap gap-2">
-                              {book.mood_tags?.split(',').map((tag, idx) => (
+                              {book.themes?.split(',').map((theme, idx) => (
                                 <span key={idx} className="bg-slate-600 text-slate-200 px-3 py-1 rounded-full text-xs">
-                                  {tag.trim()}
+                                  {theme.trim()}
                                 </span>
                               ))}
                             </div>

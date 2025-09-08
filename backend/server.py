@@ -42,12 +42,12 @@ class Book(BaseModel):
     title: str
     author: str
     genre: str
-    mood_tags: str  # comma-separated moods like 'adventurous,uplifting,calm'
+    themes: str  # comma-separated descriptive themes like 'dragons,treasure hunting,reluctant hero journey'
     description: str
     cover_image_url: str
 
 class BookRecommendationRequest(BaseModel):
-    mood: str
+    mood: str  # This will search against themes (keeping 'mood' for API compatibility)
     genre: str
 
 class BookRecommendationResponse(BaseModel):
@@ -63,11 +63,11 @@ async def root():
 @api_router.post("/recommend", response_model=BookRecommendationResponse)
 async def recommend_books(request: BookRecommendationRequest):
     """
-    Recommend books based on user's mood and genre preferences.
-    Returns top 3-5 books that match the genre and contain at least one matching mood tag.
+    Recommend books based on user's theme and genre preferences.
+    Returns top 3-5 books that match the genre and contain at least one matching theme.
     """
     try:
-        # Build query to match genre exactly and mood tags (case-insensitive partial match)
+        # Build query to match genre exactly and themes (case-insensitive partial match)
         query = {
             "genre": {"$regex": f"^{re.escape(request.genre)}$", "$options": "i"}
         }
@@ -78,16 +78,16 @@ async def recommend_books(request: BookRecommendationRequest):
         if not genre_matches:
             return BookRecommendationResponse(books=[], total_matches=0)
         
-        # Filter books that have at least one matching mood tag
+        # Filter books that have at least one matching theme
         matching_books = []
-        request_mood_lower = request.mood.lower().strip()
+        request_theme_lower = request.mood.lower().strip()
         
         for book_data in genre_matches:
-            # Parse mood_tags (comma-separated string)
-            book_moods = [mood.strip().lower() for mood in book_data.get('mood_tags', '').split(',')]
+            # Parse themes (comma-separated string)
+            book_themes = [theme.strip().lower() for theme in book_data.get('themes', '').split(',')]
             
-            # Check if the requested mood matches any of the book's mood tags
-            if any(request_mood_lower in mood or mood in request_mood_lower for mood in book_moods if mood):
+            # Check if the requested theme matches any of the book's themes
+            if any(request_theme_lower in theme or theme in request_theme_lower for theme in book_themes if theme):
                 try:
                     book = Book(**book_data)
                     matching_books.append(book)
@@ -95,14 +95,14 @@ async def recommend_books(request: BookRecommendationRequest):
                     logger.warning(f"Could not parse book data: {e}")
                     continue
         
-        # Sort by relevance (books with exact mood matches first, then partial)
-        def mood_relevance_score(book):
-            book_moods = [mood.strip().lower() for mood in book.mood_tags.split(',')]
-            exact_match = request_mood_lower in book_moods
-            partial_match = any(request_mood_lower in mood for mood in book_moods)
+        # Sort by relevance (books with exact theme matches first, then partial)
+        def theme_relevance_score(book):
+            book_themes = [theme.strip().lower() for theme in book.themes.split(',')]
+            exact_match = request_theme_lower in book_themes
+            partial_match = any(request_theme_lower in theme for theme in book_themes)
             return (2 if exact_match else (1 if partial_match else 0))
         
-        matching_books.sort(key=mood_relevance_score, reverse=True)
+        matching_books.sort(key=theme_relevance_score, reverse=True)
         
         # Return top 3-5 books
         top_books = matching_books[:5]
@@ -138,7 +138,7 @@ async def populate_sample_books():
             "title": "The Hobbit",
             "author": "J.R.R. Tolkien",
             "genre": "Fantasy",
-            "mood_tags": "adventurous,whimsical,uplifting",
+            "themes": "dragons,treasure hunting,reluctant hero's journey",
             "description": "A reluctant hobbit embarks on an unexpected journey filled with adventure, treasure, and self-discovery.",
             "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
         },
@@ -146,7 +146,7 @@ async def populate_sample_books():
             "title": "Murder on the Orient Express",
             "author": "Agatha Christie", 
             "genre": "Mystery",
-            "mood_tags": "mysterious,suspenseful,intriguing",
+            "themes": "a detective on a train,locked room mystery,multiple suspects",
             "description": "Detective Hercule Poirot investigates a murder aboard the famous Orient Express train.",
             "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
         },
@@ -154,7 +154,7 @@ async def populate_sample_books():
             "title": "The Alchemist",
             "author": "Paulo Coelho",
             "genre": "Philosophy",
-            "mood_tags": "inspirational,uplifting,contemplative",
+            "themes": "personal legend,following dreams,spiritual journey",
             "description": "A young shepherd's journey to find treasure leads to profound self-discovery.",
             "cover_image_url": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
         },
@@ -162,7 +162,7 @@ async def populate_sample_books():
             "title": "Gone Girl",
             "author": "Gillian Flynn",
             "genre": "Thriller",
-            "mood_tags": "dark,suspenseful,psychological",
+            "themes": "unreliable narrator,twisted marriage,psychological manipulation",
             "description": "A psychological thriller about a marriage gone terribly wrong.",
             "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
         },
@@ -170,7 +170,7 @@ async def populate_sample_books():
             "title": "Pride and Prejudice",
             "author": "Jane Austen",
             "genre": "Romance",
-            "mood_tags": "romantic,witty,charming",
+            "themes": "social class differences,first impressions,wit and banter",
             "description": "A classic tale of love, misunderstandings, and social commentary in Regency England.",
             "cover_image_url": "https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400"
         },
@@ -178,7 +178,7 @@ async def populate_sample_books():
             "title": "Dune",
             "author": "Frank Herbert",
             "genre": "Science Fiction",
-            "mood_tags": "epic,adventurous,complex",
+            "themes": "space exploration,desert planet,political intrigue",
             "description": "A epic space opera set on the desert planet Arrakis, following Paul Atreides' rise to power.",
             "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
         },
@@ -186,7 +186,7 @@ async def populate_sample_books():
             "title": "The Midnight Library",
             "author": "Matt Haig",
             "genre": "Fiction",
-            "mood_tags": "contemplative,uplifting,philosophical",
+            "themes": "parallel lives,second chances,life choices",
             "description": "A woman finds herself in a magical library between life and death, exploring alternate lives.",
             "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
         },
@@ -194,7 +194,7 @@ async def populate_sample_books():
             "title": "The Girl with the Dragon Tattoo",
             "author": "Stieg Larsson",
             "genre": "Thriller",
-            "mood_tags": "dark,mysterious,intense",
+            "themes": "computer hacking,family secrets,investigative journalism",
             "description": "A journalist and a hacker investigate a decades-old disappearance in Sweden.",
             "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
         },
@@ -202,7 +202,7 @@ async def populate_sample_books():
             "title": "The Lord of the Rings",
             "author": "J.R.R. Tolkien",
             "genre": "Fantasy",
-            "mood_tags": "epic,adventurous,heroic",
+            "themes": "epic quest,fellowship,battle against evil",
             "description": "An epic fantasy adventure following the quest to destroy the One Ring.",
             "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
         },
@@ -210,7 +210,7 @@ async def populate_sample_books():
             "title": "To Kill a Mockingbird",
             "author": "Harper Lee",
             "genre": "Classic",
-            "mood_tags": "thoughtful,emotional,educational",
+            "themes": "racial injustice,childhood innocence,moral courage",
             "description": "A powerful story of racial injustice and childhood innocence in the American South.",
             "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
         },
@@ -218,7 +218,7 @@ async def populate_sample_books():
             "title": "The Catcher in the Rye",
             "author": "J.D. Salinger",
             "genre": "Classic",
-            "mood_tags": "introspective,melancholy,rebellious",
+            "themes": "teenage alienation,coming of age,city wandering",
             "description": "A teenager's alienated journey through New York City over a few days.",
             "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
         },
@@ -226,7 +226,7 @@ async def populate_sample_books():
             "title": "The Great Gatsby",
             "author": "F. Scott Fitzgerald",
             "genre": "Classic",
-            "mood_tags": "glamorous,tragic,nostalgic",
+            "themes": "american dream critique,jazz age parties,unrequited love",
             "description": "A critique of the American Dream set in the Jazz Age.",
             "cover_image_url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400"
         },
@@ -234,7 +234,7 @@ async def populate_sample_books():
             "title": "Harry Potter and the Sorcerer's Stone",
             "author": "J.K. Rowling",
             "genre": "Fantasy",
-            "mood_tags": "magical,adventurous,uplifting",
+            "themes": "magical school,chosen one prophecy,friendship bonds",
             "description": "A young wizard discovers his magical heritage and begins his education at Hogwarts.",
             "cover_image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400"
         },
@@ -242,7 +242,7 @@ async def populate_sample_books():
             "title": "1984",
             "author": "George Orwell",
             "genre": "Dystopian",
-            "mood_tags": "dark,thought-provoking,dystopian",
+            "themes": "government surveillance,thought control,totalitarian society",
             "description": "A chilling portrayal of totalitarian society and government surveillance.",
             "cover_image_url": "https://images.unsplash.com/photo-1535905557558-afc4877cdf3f?w=400"
         },
@@ -250,7 +250,7 @@ async def populate_sample_books():
             "title": "The Hitchhiker's Guide to the Galaxy",
             "author": "Douglas Adams",
             "genre": "Science Fiction",
-            "mood_tags": "humorous,absurd,whimsical",
+            "themes": "space travel comedy,universal absurdity,alien encounters",
             "description": "A comedic space adventure following Arthur Dent's journey through the galaxy.",
             "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
         },
@@ -258,7 +258,7 @@ async def populate_sample_books():
             "title": "The Silent Patient",
             "author": "Alex Michaelides",
             "genre": "Thriller", 
-            "mood_tags": "psychological,mysterious,intense",
+            "themes": "psychological therapy,silent witness,obsessive therapist",
             "description": "A psychotherapist becomes obsessed with treating a woman who refuses to speak.",
             "cover_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
         },
@@ -266,7 +266,7 @@ async def populate_sample_books():
             "title": "Where the Crawdads Sing",
             "author": "Delia Owens",
             "genre": "Fiction",
-            "mood_tags": "atmospheric,emotional,contemplative",
+            "themes": "marsh isolation,nature connection,small town secrets",
             "description": "A mystery and coming-of-age story set in the marshlands of North Carolina.",
             "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
         },
@@ -274,9 +274,25 @@ async def populate_sample_books():
             "title": "The Seven Husbands of Evelyn Hugo",
             "author": "Taylor Jenkins Reid",
             "genre": "Romance",
-            "mood_tags": "glamorous,emotional,captivating",
+            "themes": "hollywood glamour,life secrets revealed,lgbtq love story",
             "description": "A reclusive Hollywood icon finally tells her life story to a young journalist.",
             "cover_image_url": "https://images.unsplash.com/photo-1518373714866-3f1478910cc0?w=400"
+        },
+        {
+            "title": "Sherlock Holmes: A Study in Scarlet",
+            "author": "Arthur Conan Doyle",
+            "genre": "Mystery",
+            "themes": "a detective in london,deductive reasoning,crime solving partnership",
+            "description": "The first adventure of the famous detective Sherlock Holmes and Dr. Watson.",
+            "cover_image_url": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400"
+        },
+        {
+            "title": "The Martian",
+            "author": "Andy Weir",
+            "genre": "Science Fiction",
+            "themes": "space exploration,survival on mars,scientific problem solving",
+            "description": "An astronaut stranded on Mars must use his ingenuity to survive until rescue.",
+            "cover_image_url": "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400"
         }
     ]
     
