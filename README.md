@@ -1,6 +1,9 @@
 # 📚 Bookly-app
 
-[![Javascript Badge](https://img.shields.io/badge/Backend-Javascript-F0DB4F?style=for-the-badge&logo=javascript)](https://www.javascript.com/)
+[![Javascript Badge](https://img.shields.io/badge/Interaction-Javascript-F0DB4F?style=for-the-badge&logo=javascript)](https://www.javascript.com/)
+[![Python Badge](https://img.shields.io/badge/Backend-Javascript-306998?style=for-the-badge&logo=python)](https://www.python.org/)
+[![HTML Badge](https://img.shields.io/badge/Structure-HTML-800000?style=for-the-badge&logo=html)](https://html.com/)
+[![CSS Badge](https://img.shields.io/badge/Styling-CSS-800080?style=for-the-badge&logo=css)](https://www.w3.org/Style/CSS/Overview.en.html)
 
 Welcome to **Bookly-app**!  
 ✨ Discover your next favorite read, customized to your genre and mood preferences.
