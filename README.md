@@ -1,5 +1,7 @@
 # 📚 Bookly-app
 
+[![Javascript Badge](https://img.shields.io/badge/Backend-Javascript-F0DB4F?style=for-the-badge&logo=javascript)](https://www.javascript.com/)
+
 Welcome to **Bookly-app**!  
 ✨ Discover your next favorite read, customized to your genre and mood preferences.
 
