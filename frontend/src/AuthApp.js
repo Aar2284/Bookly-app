@@ -37,12 +37,18 @@ const AuthApp = () => {
     author: '',
     genre: '',
     description: '',
-    mood_tags: '',
+    theme: '',
     image_url: ''
   });
   
   // Dark mode
   const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // User search states
+  const [searchGenre, setSearchGenre] = useState('');
+  const [searchTheme, setSearchTheme] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   // Hardcoded admin credentials
   const ADMIN_EMAIL = 'Main_admin@admin.Bookly';
@@ -145,7 +151,7 @@ const AuthApp = () => {
       await axios.post(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/books`, bookForm);
       fetchBooks();
       setShowAddForm(false);
-      setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+      setBookForm({ title: '', author: '', genre: '', description: '', theme: '', image_url: '' });
     } catch (error) {
       console.error('Error adding book:', error);
     }
@@ -157,7 +163,7 @@ const AuthApp = () => {
       await axios.put(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/books/${editingBook.id}`, bookForm);
       fetchBooks();
       setEditingBook(null);
-      setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+      setBookForm({ title: '', author: '', genre: '', description: '', theme: '', image_url: '' });
     } catch (error) {
       console.error('Error updating book:', error);
     }
@@ -181,10 +187,31 @@ const AuthApp = () => {
       author: book.author,
       genre: book.genre,
       description: book.description,
-      mood_tags: book.mood_tags,
+      theme: book.theme,
       image_url: book.image_url || ''
     });
     setShowAddForm(false);
+  };
+
+  // User search function
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchGenre.trim() || !searchTheme.trim()) {
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/search`, {
+        genre: searchGenre.trim(),
+        theme: searchTheme.trim()
+      });
+      setSearchResults(response.data?.books || []);
+    } catch (error) {
+      console.error('Error searching books:', error);
+      setSearchResults([]);
+    }
+    setSearching(false);
   };
 
   if (loading) {
@@ -232,7 +259,7 @@ const AuthApp = () => {
                 onClick={() => {
                   setShowAddForm(true);
                   setEditingBook(null);
-                  setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+                  setBookForm({ title: '', author: '', genre: '', description: '', theme: '', image_url: '' });
                 }}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all transform hover:scale-105"
               >
@@ -285,9 +312,9 @@ const AuthApp = () => {
                     required
                   />
                   <input
-                    placeholder="Mood Tags (comma separated)"
-                    value={bookForm.mood_tags}
-                    onChange={(e) => setBookForm({...bookForm, mood_tags: e.target.value})}
+                    placeholder="Theme (e.g., adventure, mystery, romance)"
+                    value={bookForm.theme}
+                    onChange={(e) => setBookForm({...bookForm, theme: e.target.value})}
                     className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -303,7 +330,7 @@ const AuthApp = () => {
                       onClick={() => {
                         setShowAddForm(false);
                         setEditingBook(null);
-                        setBookForm({ title: '', author: '', genre: '', description: '', mood_tags: '', image_url: '' });
+                        setBookForm({ title: '', author: '', genre: '', description: '', theme: '', image_url: '' });
                       }}
                       className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors"
                     >
@@ -333,14 +360,7 @@ const AuthApp = () => {
                           <p className="text-sm text-slate-400 mb-3">📚 Genre: {book.genre}</p>
                           <p className="text-slate-300 mb-4 text-sm leading-relaxed">{book.description}</p>
                           <div>
-                            <p className="text-xs text-slate-400 mb-2">🏷️ Mood Tags:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {book.mood_tags?.split(',').map((tag, idx) => (
-                                <span key={idx} className="bg-slate-600 text-slate-200 px-3 py-1 rounded-full text-xs">
-                                  {tag.trim()}
-                                </span>
-                              ))}
-                            </div>
+                            <p className="text-xs text-slate-400 mb-2">🏷️ Theme: <span className="bg-slate-600 text-slate-200 px-3 py-1 rounded-full text-xs ml-2">{book.theme}</span></p>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
@@ -399,24 +419,85 @@ const AuthApp = () => {
             </div>
           </header>
 
-          <main className="max-w-4xl mx-auto px-6 py-8">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8 text-center">
-              <div className="mb-8">
-                <div className="text-8xl mb-6 animate-bounce">🎉</div>
-                <h2 className="text-3xl font-bold text-white mb-4">Welcome to Bookly!</h2>
-                <p className="text-slate-400 text-lg">You're successfully logged in as {user.email}</p>
+          <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {/* Search Section */}
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8">
+              <div className="text-center mb-8">
+                <div className="text-6xl mb-4">🔍</div>
+                <h2 className="text-3xl font-bold text-white mb-4">Find Your Next Great Read</h2>
+                <p className="text-slate-400 text-lg">Search for books by genre and theme</p>
               </div>
-              <div className="space-y-6">
-                <p className="text-slate-300 text-lg">
-                  Your personalized book recommendation experience awaits!
-                </p>
-                <p className="text-slate-400">
-                  🌟 Discover amazing books based on your mood and preferences<br/>
-                  📖 Get personalized recommendations<br/>
-                  ✨ Track your reading journey
-                </p>
-              </div>
+              
+              <form onSubmit={handleSearch} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Genre (e.g., Fantasy, Mystery, Romance)"
+                    value={searchGenre}
+                    onChange={(e) => setSearchGenre(e.target.value)}
+                    className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Theme (e.g., adventure, mystery, romance)"
+                    value={searchTheme}
+                    onChange={(e) => setSearchTheme(e.target.value)}
+                    className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="text-center">
+                  <button
+                    type="submit"
+                    disabled={searching}
+                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 text-white rounded-lg font-medium transition-all transform hover:scale-105"
+                  >
+                    {searching ? '🔄 Searching...' : '🔍 Search Books'}
+                  </button>
+                </div>
+              </form>
             </div>
+
+            {/* Search Results */}
+            {(searchResults.length > 0 || (searchGenre && searchTheme && !searching)) && (
+              <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8">
+                <h3 className="text-2xl font-semibold mb-6 text-white">
+                  📖 Search Results ({searchResults.length} books found)
+                </h3>
+                {searchResults.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400">
+                    <div className="text-6xl mb-4">📚</div>
+                    <p className="text-xl">No books found for "{searchGenre}" genre with "{searchTheme}" theme.</p>
+                    <p className="text-sm mt-2">Try different search terms.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6">
+                    {searchResults.map((book) => (
+                      <div key={book.id} className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1">
+                            <h4 className="text-xl font-semibold text-white mb-2">{book.title}</h4>
+                            <p className="text-slate-300 mb-1">👤 by {book.author}</p>
+                            <p className="text-sm text-slate-400 mb-2">📚 Genre: {book.genre}</p>
+                            <p className="text-sm text-slate-400 mb-3">🏷️ Theme: {book.theme}</p>
+                            <p className="text-slate-300 text-sm leading-relaxed">{book.description}</p>
+                          </div>
+                          {book.cover_image_url && (
+                            <img 
+                              src={book.cover_image_url} 
+                              alt={book.title}
+                              className="w-20 h-28 object-cover rounded-lg"
+                              onError={(e) => { e.target.style.display = 'none' }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </main>
         </div>
       </div>
